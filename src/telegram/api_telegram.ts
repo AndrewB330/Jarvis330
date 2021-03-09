@@ -45,7 +45,7 @@ export class Telegram {
 
 async function checkIfNotAdminAndReply(ctx: Context): Promise<boolean> {
     if (ctx.chat.id !== ADMIN_CHAT_ID) {
-        await ctx.replyWithHTML('Извини, но я служу только мастеру. 🧐');
+        await ctx.replyWithHTML('Sorry, I serve only to my <b>Master</b>. 🧐');
         return true;
     }
     return false;
@@ -55,7 +55,7 @@ TELEGRAM_API.start(async (ctx) => {
     if (await checkIfNotAdminAndReply(ctx)) {
         return;
     }
-    await ctx.replyWithHTML('Приветствую, Мастер! 😎');
+    await ctx.replyWithHTML('Hello, my <b>Master</b>! 😎');
 });
 
 export function startTelegramBot() {
