@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Distribution</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            width: 300px;
+            height: 320px;
+        }
+    </style>
+</head>
+<body>
+<div id="canvas-holder">
+    <canvas id="chart-area" width="300" height="300">
+
+    </canvas>
+</div>
+<script>
+
+  const colors = [
+    'hsl(216,70%,50%)',
+    'hsl(47,80%,52%)',
+    'hsl(0,70%,50%)',
+    'hsl(109,70%,50%)',
+    'hsl(175,70%,50%)',
+    'hsl(268,70%,50%)',
+    'hsl(320,70%,50%)',
+    'hsl(154,70%,50%)',
+    'hsl(19,70%,50%)',
+  ];
+
+  const config = {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: JSON.parse('_DATA_'),
+        backgroundColor: colors,
+        label: 'data'
+      }],
+      labels: JSON.parse('_LABELS_')
+    },
+    options: {
+      cutoutPercentage: 75
+    }
+  };
+
+  window.onload = function () {
+    const ctx = document.getElementById('chart-area').getContext('2d');
+    window.myPie = new Chart(ctx, config);
+  };
+
+</script>
+</body>
+</html>

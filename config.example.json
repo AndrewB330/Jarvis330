@@ -1,0 +1,24 @@
+{
+  "common": {
+    "gmt": 0
+  },
+  "telegram": {
+    "admin-chat-id": 0,
+    "bot-token": ""
+  },
+  "binance": {
+    "accumulation": {
+      "api-key": "",
+      "api-secret": ""
+    }
+  },
+  "firebase": {
+    "credentials": {
+      "type": "",
+      "project_id": "",
+      "private_key_id": "",
+      "private_key": "",
+      "client_email": ""
+    }
+  }
+}
