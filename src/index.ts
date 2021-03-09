@@ -2,7 +2,7 @@ import {BinanceExchangeAccount} from "./crypto/exchange_binance";
 import {getBinanceApi} from "./crypto/api_binance";
 import {AccumulationBot} from "./crypto/bot_accumulation";
 import {RealtimeClock} from "./crypto/clock";
-import {startTelegramBot} from "./telegram/api_telegram";
+import {startTelegramBot, Telegram} from "./telegram/api_telegram";
 
 const realtimeClock = new RealtimeClock();
 
@@ -17,5 +17,7 @@ function startAccumulationBot() {
 
     startTelegramBot();
     startAccumulationBot();
+
+    await Telegram.sendMsgToAdmin('<b>Bot started.</b>');
 
 })();
