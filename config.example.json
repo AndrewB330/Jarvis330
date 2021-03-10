@@ -1,10 +1,25 @@
 {
   "common": {
+    "comment": "GMT - local timezone",
     "gmt": 0
   },
   "telegram": {
+    "comment": "admin-chat-id - you can get it from @userinfobot, bot-token - create your bot with @BotFather",
     "admin-chat-id": 0,
     "bot-token": ""
+  },
+  "bots": {
+    "accumulation": {
+      "quote-asset": "USDT",
+
+      "main-asset": "BTC",
+      "main-asset-buy-amount": 2.0,
+
+      "other-assets": ["ETH", "BNB", "ADA"],
+      "other-assets-buy-amount": 1.0,
+
+      "min-order-amount": 12.0
+    }
   },
   "binance": {
     "accumulation": {
@@ -14,11 +29,6 @@
   },
   "firebase": {
     "credentials": {
-      "type": "",
-      "project_id": "",
-      "private_key_id": "",
-      "private_key": "",
-      "client_email": ""
     }
   }
 }

@@ -7,7 +7,7 @@ import {Telegram} from "../telegram/api_telegram";
 import {Charts} from "../charts/charts";
 
 const UPDATE_INTERVAL_SEC = 60;
-const DAILY_UPDATE_HOUR = 8 + 30/60;
+const DAILY_UPDATE_HOUR = 8 + 30 / 60;
 
 interface AccumulationOrder {
     time: number;
@@ -17,14 +17,21 @@ interface AccumulationOrder {
     quoteAsset: string;
 }
 
+export interface AccumulationBotConfig {
+    quoteAsset: string;
+
+    mainAsset: string;
+    mainAssetBuyAmount: number;
+
+    otherAssets: string[];
+    otherAssetsBuyAmount: number;
+
+    minOrderAmount: number;
+}
+
 export class AccumulationBot extends Bot {
-    static readonly BALANCE_PER_DAY = 3;
-    static readonly MIN_ORDER_SIZE = 12;
-    static readonly QUOTE_ASSET = 'USDT';
 
-    static readonly ALTS = ['BNB', 'ADA', 'ETH'];
-
-    constructor(name: string, exchangeAccount: ExchangeAccount, clock: Clock) {
+    constructor(name: string, exchangeAccount: ExchangeAccount, clock: Clock, private config: AccumulationBotConfig) {
         super(name, exchangeAccount, clock);
     }
 
@@ -47,49 +54,51 @@ export class AccumulationBot extends Bot {
     }
 
     async update() {
+        const curQuoteBalance = await this.exchangeAccount.getAssetBalance(this.config.quoteAsset);
+        const minQuoteAmount = this.config.minOrderAmount * 2;
+        if (curQuoteBalance.free < this.config.minOrderAmount * 2) {
+            await this.sendNotification(
+                'Insufficient funds 💸' +
+                `\n You should have at least ${numberFmt(minQuoteAmount, 2)} ${this.config.quoteAsset}.`
+            );
+            return;
+        }
         const currentDay = Math.floor(this.clock.getTime() / Clock.DAY);
         const bought = new Set<string>();
 
-        let remainingBalance = AccumulationBot.BALANCE_PER_DAY;
-
         for (const order of await this.getAllOrders()) {
             const day = Math.floor(order.time / Clock.DAY);
-            if (day === currentDay && order.quoteAsset === AccumulationBot.QUOTE_ASSET) {
-                remainingBalance -= order.price * order.amount;
+            if (day === currentDay && order.quoteAsset === this.config.quoteAsset) {
                 bought.add(order.asset);
             }
         }
 
-        if (remainingBalance < 0.1) {
-            return;
-        }
-
 
         if (!bought.has('BTC') && await this.shouldBuy('BTC')) {
-            await this.buy(Math.min(remainingBalance, 2.0), 'BTC');
+            await this.buy(this.config.mainAssetBuyAmount, 'BTC');
             return;
         }
 
         const alt = this.getAltOfTheDay();
         await this.shouldBuy(alt);
         if (!bought.has(alt) && await this.shouldBuy(alt)) {
-            await this.buy(Math.min(remainingBalance, 1.0), alt);
+            await this.buy(this.config.otherAssetsBuyAmount, alt);
             return;
         }
     }
 
     async shouldBuy(asset: string): Promise<boolean> {
         const timeOfTheDay = (this.clock.getTime() % (Clock.DAY)) / Clock.DAY;
-        const market = await this.exchangeAccount.getMarket({base: asset, quote: AccumulationBot.QUOTE_ASSET});
+        const market = await this.exchangeAccount.getMarket({base: asset, quote: this.config.quoteAsset});
         const series = await market.getCandlestickSeries('1h', 10);
 
         return await market.getLastPrice() < series.getAvgPriceMA(8) * 0.98 || timeOfTheDay > 0.8;
     }
 
     async buy(quoteAssetValue: number, baseAsset: string): Promise<void> {
-        const market = await this.exchangeAccount.getMarket({base: baseAsset, quote: AccumulationBot.QUOTE_ASSET});
+        const market = await this.exchangeAccount.getMarket({base: baseAsset, quote: this.config.quoteAsset});
         const price = await market.getLastPrice();
-        const sellAmount = AccumulationBot.MIN_ORDER_SIZE / price;
+        const sellAmount = this.config.minOrderAmount / price;
         const buyAmount = sellAmount + quoteAssetValue / price;
         const buyOrder = await market.buyMarket(buyAmount);
         await sleep(1500);
@@ -100,7 +109,7 @@ export class AccumulationBot extends Bot {
             asset: baseAsset,
             amount: totalAmount,
             price,
-            quoteAsset: AccumulationBot.QUOTE_ASSET
+            quoteAsset: this.config.quoteAsset
         });
     }
 
@@ -119,10 +128,10 @@ export class AccumulationBot extends Bot {
                 quoteSpent += order.price * order.amount;
                 baseAmount += order.amount;
             }
-            const market = await this.exchangeAccount.getMarket({base: asset, quote: AccumulationBot.QUOTE_ASSET});
+            const market = await this.exchangeAccount.getMarket({base: asset, quote: this.config.quoteAsset});
             const quoteValue = (await this.exchangeAccount.convertAsset(
                 {asset, amount: baseAmount},
-                AccumulationBot.QUOTE_ASSET
+                this.config.quoteAsset
             )).amount;
             const profit = quoteValue - quoteSpent;
             results += `<b>${asset.toUpperCase()}</b> (${numberFmt(profit, 2, 'u', '$', (profit < 0 ? '' : '+'))})\n`;
@@ -146,7 +155,7 @@ export class AccumulationBot extends Bot {
 
     private getAltOfTheDay(): string {
         const currentDay = Math.floor(this.clock.getTime() / Clock.DAY);
-        return AccumulationBot.ALTS[currentDay % AccumulationBot.ALTS.length];
+        return this.config.otherAssets[currentDay % this.config.otherAssets.length];
     }
 
     private async getAllOrders(): Promise<AccumulationOrder[]> {

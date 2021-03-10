@@ -1,4 +1,5 @@
 import {readFileSync} from "fs";
+import {AccumulationBotConfig} from "./crypto/bot_accumulation";
 
 // @ts-ignore
 export const configJSON = JSON.parse(readFileSync('config.json'));
@@ -20,6 +21,7 @@ export class FirebaseConfig {
 }
 
 export type BinanceAccount = 'Accumulation' | 'Main';
+export type BotName = 'accumulation';
 
 export interface BinanceCredentials {
     apiKey: string;
@@ -38,5 +40,21 @@ export class BinanceConfig {
 export class CommonConfig {
     static getGMT(): number {
         return configJSON['common']['gmt'];
+    }
+}
+
+export class BotConfig {
+    static getAccumulationBotConfig(botName: BotName): AccumulationBotConfig {
+        return {
+            quoteAsset: configJSON['bots'][botName]['quote-asset'],
+
+            mainAsset: configJSON['bots'][botName]['main-asset'],
+            mainAssetBuyAmount: configJSON['bots'][botName]['main-asset-buy-amount'],
+
+            otherAssets: configJSON['bots'][botName]['other-assets'],
+            otherAssetsBuyAmount: configJSON['bots'][botName]['other-assets-buy-amount'],
+
+            minOrderAmount: configJSON['bots'][botName]['min-order-amount']
+        };
     }
 }
