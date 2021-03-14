@@ -1,29 +1,15 @@
-import {BinanceExchangeAccount} from "./crypto/exchange_binance";
-import {getBinanceApi} from "./crypto/api_binance";
-import {AccumulationBot} from "./crypto/bot_accumulation";
-import {RealtimeClock} from "./crypto/clock";
 import {startTelegramBot, Telegram} from "./telegram/api_telegram";
-import {BotConfig, BotName} from "./config";
-
-const realtimeClock = new RealtimeClock();
-
-function startAccumulationBot(botName: BotName) {
-    const exchangeAccount = new BinanceExchangeAccount(getBinanceApi('Accumulation'));
-    const accumulationBot = new AccumulationBot(
-        botName,
-        exchangeAccount,
-        realtimeClock,
-        BotConfig.getAccumulationBotConfig(botName)
-    );
-    accumulationBot.start();
-    accumulationBot.enableNotifications();
-}
+import {TelegramNotifier} from "./telegram/notifier";
+import {startAllBots} from "./modules";
+import {EventsManager} from './events';
 
 (async function main() {
 
-    startTelegramBot();
-    startAccumulationBot('accumulation');
+    EventsManager.addConsumer(new TelegramNotifier());
 
-    await Telegram.sendMsgToAdmin('<b>Bot started.</b>');
+    startTelegramBot();
+    startAllBots();
+
+    //await Telegram.sendMsgToAdmin('<b>Bot started.</b>');
 
 })();

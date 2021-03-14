@@ -1,0 +1,22 @@
+{
+  "bots": [
+    {
+      "name": "AccumulationBot",
+
+      "type": "accumulation",
+
+      "exchange": "binance",
+      "account": "second",
+
+      "quote-asset": "USDT",
+
+      "main-asset": "BTC",
+      "main-asset-buy-amount": 2.0,
+
+      "other-assets": ["ETH", "BNB", "ADA"],
+      "other-assets-buy-amount": 1.0,
+
+      "min-order-amount": 12.0
+    }
+  ]
+}

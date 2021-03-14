@@ -8,21 +8,12 @@
     "admin-chat-id": 0,
     "bot-token": ""
   },
-  "bots": {
-    "accumulation": {
-      "quote-asset": "USDT",
-
-      "main-asset": "BTC",
-      "main-asset-buy-amount": 2.0,
-
-      "other-assets": ["ETH", "BNB", "ADA"],
-      "other-assets-buy-amount": 1.0,
-
-      "min-order-amount": 12.0
-    }
-  },
   "binance": {
-    "accumulation": {
+    "main": {
+      "api-key": "",
+      "api-secret": ""
+    },
+    "second": {
       "api-key": "",
       "api-secret": ""
     }

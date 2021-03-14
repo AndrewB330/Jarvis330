@@ -1,5 +1,5 @@
 import Timeout = NodeJS.Timeout;
-import {CommonConfig} from "../config";
+import {CommonConfig} from "./config";
 
 export type ClockTicker = () => Promise<void>;
 
@@ -33,17 +33,19 @@ export class RealtimeClock extends Clock {
 
     addTicker(interval: number, ticker: ClockTicker): string {
         const id = `ticker${this.tickerIdCounter++}`;
-        this.timeouts.set(id, setInterval(ticker, interval * 1000));
+        this.timeouts.set(id, setInterval(() => {
+            ticker().catch(console.error);
+        }, interval * 1000));
         return id;
     }
 
     addDailyTicker(hour: number, ticker: ClockTicker): string {
         const id = `tickerDaily${this.tickerIdCounter++}`;
         let prevHour = 0;
-        this.timeouts.set(id, setInterval(async () => {
+        this.timeouts.set(id, setInterval(() => {
             const curHour = ((this.getTime() + CommonConfig.getGMT() * Clock.HOUR) % Clock.DAY) / Clock.HOUR;
             if (prevHour <= hour && curHour > hour) {
-                await ticker();
+                ticker().catch(console.error);
             }
             prevHour = curHour;
         }, 10000));

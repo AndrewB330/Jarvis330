@@ -1,7 +1,7 @@
 import {Candlestick, CandlestickScale, Symbol, SymbolInfo, symbolToBinanceStr} from "./model";
 import {appendFileSync, existsSync, readFileSync} from "fs";
 import {sleep} from "../helpers";
-import {BinanceAccount, BinanceConfig, BinanceCredentials} from "../config";
+import {BinanceConfig} from "../config";
 import {Binance} from "binance-api-node";
 
 // tslint:disable-next-line:no-require-imports
@@ -133,7 +133,7 @@ export class BinancePublicApi {
 
 }
 
-export function getBinanceApi(account: BinanceAccount) : Binance {
+export function getBinanceApi(account: string) : Binance {
     return new BinanceApiNode(BinanceConfig.getCredentials(account));
 }
 

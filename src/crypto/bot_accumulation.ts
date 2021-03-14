@@ -1,10 +1,8 @@
-import {Bot} from "./bot_base";
+import {TradingBot} from "./bot_trading";
 import {ExchangeAccount} from "./exchange_base";
-import {Clock} from "./clock";
+import {Clock} from "../clock";
 import {Firebase} from "../firebase/firebase";
-import {getOrSet, numberFmt, sleep} from "../helpers";
-import {Telegram} from "../telegram/api_telegram";
-import {Charts} from "../charts/charts";
+import {getOrSet, sleep} from "../helpers";
 
 const UPDATE_INTERVAL_SEC = 60;
 const DAILY_UPDATE_HOUR = 8 + 30 / 60;
@@ -29,40 +27,42 @@ export interface AccumulationBotConfig {
     minOrderAmount: number;
 }
 
-export class AccumulationBot extends Bot {
+export class AccumulationBot extends TradingBot {
 
     constructor(name: string, exchangeAccount: ExchangeAccount, clock: Clock, private config: AccumulationBotConfig) {
         super(name, exchangeAccount, clock);
     }
 
-    start() {
-        if (!this.started) {
-            super.start();
-
+    start(): boolean {
+        if (super.start()) {
+            this.dispatchBotEvent('start', {});
+            this.dispatchResults(false).catch(console.error);
             this.tickers.push(this.clock.addTicker(UPDATE_INTERVAL_SEC, async () => {
-                try {
-                    await this.update();
-                } catch (e) {
-                    console.error(e);
-                }
+                await this.update();
             }));
-
             this.tickers.push(this.clock.addDailyTicker(DAILY_UPDATE_HOUR, async () => {
-                await this.sendResults(false);
+                await this.dispatchResults(false);
             }));
+            return true;
         }
+        return false;
+    }
+
+    getType(): string {
+        return 'accumulation';
     }
 
     async update() {
         const curQuoteBalance = await this.exchangeAccount.getAssetBalance(this.config.quoteAsset);
         const minQuoteAmount = this.config.minOrderAmount * 2;
-        if (curQuoteBalance.free < this.config.minOrderAmount * 2) {
-            await this.sendNotification(
-                'Insufficient funds 💸' +
-                `\n You should have at least ${numberFmt(minQuoteAmount, 2)} ${this.config.quoteAsset}.`
-            );
+        if (curQuoteBalance.free < minQuoteAmount) {
+            this.dispatchBotEvent('insufficient', {
+                min_amount: minQuoteAmount,
+                quote_asset: this.config.quoteAsset
+            });
             return;
         }
+
         const currentDay = Math.floor(this.clock.getTime() / Clock.DAY);
         const bought = new Set<string>();
 
@@ -113,14 +113,12 @@ export class AccumulationBot extends Bot {
         });
     }
 
-    async sendResults(details = false) {
-        let results = '';
+    async dispatchResults(details = false) {
         const orders = new Map<string, AccumulationOrder[]>();
         for (const order of await this.getAllOrders()) {
             getOrSet(orders, order.asset, []).push(order);
         }
-        const chartData = [];
-        const chartLabels = [];
+        const positions = [];
         for (const asset of orders.keys()) {
             let quoteSpent = 0;
             let baseAmount = 0;
@@ -133,24 +131,19 @@ export class AccumulationBot extends Bot {
                 {asset, amount: baseAmount},
                 this.config.quoteAsset
             )).amount;
-            const profit = quoteValue - quoteSpent;
-            results += `<b>${asset.toUpperCase()}</b> (${numberFmt(profit, 2, 'u', '$', (profit < 0 ? '' : '+'))})\n`;
-            results += `<i>Spent: ${numberFmt(quoteSpent, 2, 'u', '$')}</i>\n`;
-            if (details) {
-                results += `Amount: ${numberFmt(baseAmount, await market.getLotPrecision(), 'u')} ${asset.toUpperCase()}\n`;
-                results += `Avg. price: ${numberFmt(quoteSpent / baseAmount, await market.getPricePrecision(), 'u', '$')}\n`;
-            }
-            results += '\n';
-            chartData.push(quoteValue);
-            chartLabels.push(asset);
+
+            positions.push({
+                asset,
+                quoteAsset: this.config.quoteAsset,
+                quoteSpent,
+                quoteValue,
+                baseAmount,
+                pricePrecision: await market.getPricePrecision(),
+                lotPrecision: await market.getLotPrecision()
+            });
         }
 
-        let photo = '';
-        if (this.notifications) {
-            photo = await Charts.generateDistributionChart(chartData, chartLabels);
-        }
-
-        await this.sendNotification(results, photo);
+        this.dispatchBotEvent('results', {positions, details});
     }
 
     private getAltOfTheDay(): string {
@@ -166,10 +159,12 @@ export class AccumulationBot extends Bot {
     private async addNewOrder(order: AccumulationOrder): Promise<void> {
         const market = await this.exchangeAccount.getMarket({base: order.asset, quote: order.quoteAsset});
 
-        await this.sendNotification(
-            `Bought ${numberFmt(order.amount, await market.getLotPrecision(), 'u')} <b>${order.asset}</b> ~` +
-            `${numberFmt(order.amount * order.price, 2, 'u', '$')}`
-        );
+        this.dispatchBotEvent('buy', {
+            pricePrecision: await market.getLotPrecision(),
+            asset: order.asset,
+            amount: order.amount,
+            price: order.price
+        });
 
         const orders = await this.getAllOrders();
         await Firebase.setValue(`bots/${this.name}/orders/${orders.length}`, order);

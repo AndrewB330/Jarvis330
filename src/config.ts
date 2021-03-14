@@ -20,19 +20,22 @@ export class FirebaseConfig {
     }
 }
 
-export type BinanceAccount = 'Accumulation' | 'Main';
-export type BotName = 'accumulation';
-
 export interface BinanceCredentials {
     apiKey: string;
     apiSecret: string;
 }
 
 export class BinanceConfig {
-    static getCredentials(account: BinanceAccount) : BinanceCredentials {
+    static getCredentials(accountName: string) : BinanceCredentials {
+        if (!configJSON['binance'][accountName]) {
+            return {
+                apiKey: '',
+                apiSecret: ''
+            };
+        }
         return {
-            apiKey: configJSON['binance'][account.toLowerCase()]['api-key'],
-            apiSecret: configJSON['binance'][account.toLowerCase()]['api-secret'],
+            apiKey: configJSON['binance'][accountName]['api-key'],
+            apiSecret: configJSON['binance'][accountName]['api-secret'],
         };
     }
 }
@@ -40,21 +43,5 @@ export class BinanceConfig {
 export class CommonConfig {
     static getGMT(): number {
         return configJSON['common']['gmt'];
-    }
-}
-
-export class BotConfig {
-    static getAccumulationBotConfig(botName: BotName): AccumulationBotConfig {
-        return {
-            quoteAsset: configJSON['bots'][botName]['quote-asset'],
-
-            mainAsset: configJSON['bots'][botName]['main-asset'],
-            mainAssetBuyAmount: configJSON['bots'][botName]['main-asset-buy-amount'],
-
-            otherAssets: configJSON['bots'][botName]['other-assets'],
-            otherAssetsBuyAmount: configJSON['bots'][botName]['other-assets-buy-amount'],
-
-            minOrderAmount: configJSON['bots'][botName]['min-order-amount']
-        };
     }
 }
