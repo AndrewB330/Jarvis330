@@ -88,7 +88,7 @@ export class TelegramNotifier implements EventConsumer {
     }
 
     async accumulationBuyEventToMsg(event: JEvent): Promise<string> {
-        return `<b>></b> Bought ${numberFmt(event.args['amount'], event.args['lotPrecision'], 'u')} <b>${event.args['asset']}</b> ~` +
+        return `<b>></b> Bought ${numberFmt(event.args['amount'], event.args['pricePrecision'], 'u')} <b>${event.args['asset']}</b> ~` +
             `${numberFmt(event.args['amount'] * event.args['price'], 2, 'u', '$')}\n`;
     }
 
