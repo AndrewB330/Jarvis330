@@ -11,10 +11,10 @@
       "quote-asset": "USDT",
 
       "main-asset": "BTC",
-      "main-asset-buy-amount": 2.0,
+      "main-asset-buy-amount": 1.5,
 
-      "other-assets": ["ETH", "BNB", "ADA"],
-      "other-assets-buy-amount": 1.0,
+      "other-assets": ["ETH", "BNB", "ADA", "DOGE"],
+      "other-assets-buy-amount": 1.5,
 
       "min-order-amount": 12.0
     }
