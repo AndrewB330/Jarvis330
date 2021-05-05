@@ -5,7 +5,8 @@ import {Firebase} from "../firebase/firebase";
 import {getOrSet, sleep} from "../helpers";
 
 const UPDATE_INTERVAL_SEC = 60;
-const DAILY_UPDATE_HOUR = 8 + 30 / 60;
+const DAILY_UPDATE_HOUR_1 = 7 + 30 / 60;
+const DAILY_UPDATE_HOUR_2 = 19 + 30 / 60;
 
 interface AccumulationOrder {
     time: number;
@@ -40,7 +41,10 @@ export class AccumulationBot extends TradingBot {
             this.tickers.push(this.clock.addTicker(UPDATE_INTERVAL_SEC, async () => {
                 await this.update();
             }));
-            this.tickers.push(this.clock.addDailyTicker(DAILY_UPDATE_HOUR, async () => {
+            this.tickers.push(this.clock.addDailyTicker(DAILY_UPDATE_HOUR_1, async () => {
+                await this.dispatchResults(false);
+            }));
+            this.tickers.push(this.clock.addDailyTicker(DAILY_UPDATE_HOUR_2, async () => {
                 await this.dispatchResults(false);
             }));
             return true;
@@ -72,7 +76,6 @@ export class AccumulationBot extends TradingBot {
                 bought.add(order.asset);
             }
         }
-
 
         if (!bought.has('BTC') && await this.shouldBuy('BTC')) {
             await this.buy(this.config.mainAssetBuyAmount, 'BTC');
@@ -119,6 +122,9 @@ export class AccumulationBot extends TradingBot {
             getOrSet(orders, order.asset, []).push(order);
         }
         const positions = [];
+        let totalSpent = 0;
+        let totalValue = 0;
+        const curQuoteBalance = (await this.exchangeAccount.getAssetBalance(this.config.quoteAsset)).free;
         for (const asset of orders.keys()) {
             let quoteSpent = 0;
             let baseAmount = 0;
@@ -132,6 +138,9 @@ export class AccumulationBot extends TradingBot {
                 this.config.quoteAsset
             )).amount;
 
+            totalSpent += quoteSpent;
+            totalValue += quoteValue;
+
             positions.push({
                 asset,
                 quoteAsset: this.config.quoteAsset,
@@ -143,7 +152,7 @@ export class AccumulationBot extends TradingBot {
             });
         }
 
-        this.dispatchBotEvent('results', {positions, details});
+        this.dispatchBotEvent('results', {positions, details, totalSpent, totalValue, curQuoteBalance});
     }
 
     private getAltOfTheDay(): string {

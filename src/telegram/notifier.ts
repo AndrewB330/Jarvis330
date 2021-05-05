@@ -104,6 +104,8 @@ export class TelegramNotifier implements EventConsumer {
 
     async accumulationResultsEventToMsg(event: JEvent): Promise<string> {
         let msg = '<b>></b> <i>Results</i>\n';
+        msg += `<b>Total:</b> ${numberFmt(event.args['totalSpent'], 2, 'u', '$')} + ${numberFmt(event.args['totalValue'] - event.args['totalSpent'], 2, 'u', '$')}\n`;
+        msg += '\n';
         for (const position of event.args['positions']) {
             const profit = position['quoteValue'] - position['quoteSpent'];
             msg += `<b>${position['asset'].toUpperCase()}</b> (${numberFmt(profit, 2, 'u', '$', (profit < 0 ? '' : '+'))}) `;
@@ -113,6 +115,8 @@ export class TelegramNotifier implements EventConsumer {
                 msg += `Avg. price: ${numberFmt(position['quoteSpent'] / position['baseAmount'], position['pricePrecision'], 'u', '$')}\n`;
             }*/
         }
+        msg += '\n';
+        msg += `<b>Remaining balance:</b> ${numberFmt(event.args['curQuoteBalance'], 2, 'u', '$')}`;
         return msg;
     }
 
