@@ -56,35 +56,52 @@ export class RealtimeClock extends Clock {
         clearInterval(this.timeouts.get(tickerId));
         this.timeouts.delete(tickerId);
     }
-
 }
 
-/*
-export class HistoricalClock implements Clock {
-    private currentTime: number;
-    private callback: () => Promise<void>;
+export class HistoricalClock extends Clock {
+    private tickerIdCounter = 0;
+    private tickers = new Map<string, ClockTicker>();
+    private tickersDelay = new Map<string, number>();
+    private tickersCur = new Map<string, number>();
+    private curTime: number;
 
-    constructor(public startTime: number) {
-        this.currentTime = startTime;
+    constructor(private startTime: number) {
+        super();
+        this.curTime = startTime;
     }
 
-    getTime(): number {
-        return this.currentTime;
-    }
-
-    async makeStep(milliseconds: number) {
-        this.currentTime += milliseconds;
-        if (this.callback) {
-            await this.callback();
+    async step(deltaTime: number) {
+        this.curTime += deltaTime;
+        for (const ticker of this.tickers.keys()) {
+            const delay = this.tickersDelay.get(ticker);
+            let cur = this.tickersCur.get(ticker) + deltaTime;
+            while (cur > delay) {
+                await this.tickers.get(ticker)();
+                cur -= delay;
+            }
+            this.tickersCur.set(ticker, cur);
         }
     }
 
-    onTick(callback(): Promise<void>) {
-        this.callback = callback;
+    getTime(): number {
+        return Date.now();
     }
 
-    reset(timestamp: number) {
-        this.currentTime = this.startTime = timestamp;
+    addTicker(interval: number, ticker: ClockTicker): string {
+        const id = `ticker${this.tickerIdCounter++}`;
+        this.tickers.set(id, ticker);
+        this.tickersCur.set(id, 0);
+        this.tickersDelay.set(id, interval * 1000);
+        return id;
+    }
+
+    addDailyTicker(hour: number, ticker: ClockTicker): string {
+        return '';
+    }
+
+    removeTicker(tickerId: string) {
+        this.tickers.delete(tickerId);
+        this.tickersCur.delete(tickerId);
+        this.tickersDelay.delete(tickerId);
     }
 }
-*/

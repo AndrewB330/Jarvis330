@@ -20,6 +20,10 @@ export class DataCache<T> {
         return this.map.get(key);
     }
 
+    get(key: string): T {
+        return this.map.get(key);
+    }
+
     values(): T[] {
         return [...this.map.values()];
     }
